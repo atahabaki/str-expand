@@ -452,6 +452,32 @@ fn collection(tokens: &Vec<Token>) -> Result<Node, ParsingError> {
         current.push(Token::Text(Arc::new(String::new()), pos.1 - 1));
     }
     collections.push(current);
+    let parse_collections = || -> Result<Node, ParsingError> {
+        // Iterate over every collection on collections
+        // If collection has `Token::OBra(_)` or `Token::CBra(_)`,
+        //  parse it? How?
+        //  It is better to put this collection inside parse(&collection), but is it any good?
+        // Return a collection.
+        let mut parsed_collections = vec![];
+        for collection in collections.clone() {
+            if collection
+                .iter()
+                .any(|t| matches!(t, Token::OBra(_) | Token::CBra(_)))
+            {
+                match parse(&collection) {
+                    Ok(n) => parsed_collections.push(n),
+                    Err(e) => return Err(e),
+                }
+            } else {
+                parsed_collections.push(text(&collection)?);
+            }
+        }
+        Ok(Node::Collection {
+            items: parsed_collections,
+            start: pos.0,
+            end: pos.1,
+        })
+    };
     match collections.len() {
         0 => Err(ParsingError::NothingInBraces(pos.0)),
         1 => {
@@ -464,35 +490,13 @@ fn collection(tokens: &Vec<Token>) -> Result<Node, ParsingError> {
             let collection = &collections[0];
             match collection.iter().any(|t| matches!(t, Token::Range(_))) {
                 true => range(collection),
-                false => text(collection),
+                false => match text(collection) {
+                    Ok(node) => Ok(node),
+                    Err(_) => parse_collections(),
+                },
             }
         }
-        _ => {
-            // Iterate over every collection on collections
-            // If collection has `Token::OBra(_)` or `Token::CBra(_)`,
-            //  parse it? How?
-            //  It is better to put this collection inside parse(&collection), but is it any good?
-            // Return a collection.
-            let mut parsed_collections = vec![];
-            for collection in collections {
-                if collection
-                    .iter()
-                    .any(|t| matches!(t, Token::OBra(_) | Token::CBra(_)))
-                {
-                    match parse(&collection) {
-                        Ok(n) => parsed_collections.push(n),
-                        Err(e) => return Err(e),
-                    }
-                } else {
-                    parsed_collections.push(text(&collection)?);
-                }
-            }
-            Ok(Node::Collection {
-                items: parsed_collections,
-                start: pos.0,
-                end: pos.1,
-            })
-        }
+        _ => parse_collections(),
     }
 }
 
