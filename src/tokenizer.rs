@@ -147,13 +147,19 @@ pub fn tokenize(content: &str) -> Result<Vec<Token>, TokenizationError> {
     let mut iter = content.chars().enumerate();
     let tokenize_text_buffer = |tokens: &mut Vec<Token>, buffers: &mut (String, String), i| {
         if !buffers.0.is_empty() {
-            tokens.push(Token::Text(Arc::new(buffers.0.clone()), i - buffers.0.len()));
+            tokens.push(Token::Text(
+                Arc::new(buffers.0.clone()),
+                i - buffers.0.len(),
+            ));
             buffers.0.clear();
         }
     };
     let tokenize_number_buffer = |tokens: &mut Vec<Token>, buffers: &mut (String, String), i| {
         if !buffers.1.is_empty() {
-            tokens.push(Token::Number(Arc::new(buffers.1.clone()), i - buffers.1.len()));
+            tokens.push(Token::Number(
+                Arc::new(buffers.1.clone()),
+                i - buffers.1.len(),
+            ));
             buffers.1.clear();
         }
     };
