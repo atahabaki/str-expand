@@ -504,6 +504,55 @@ mod tests {
     use crate::tokenizer::Token;
 
     #[test]
+    fn test_outer_single_entry() {
+        assert_eq!(
+            parse(&vec![
+                Token::OBra(0),
+                Token::Text(Arc::new("W".into()), 1),
+                Token::OBra(2),
+                Token::Text(Arc::new("x".into()), 3),
+                Token::Comma(4),
+                Token::Text(Arc::new("y".into()), 5),
+                Token::CBra(6),
+                Token::CBra(7),
+            ]),
+            Ok(Node::BraceExpansion {
+                prefix: None,
+                inside: Some(Box::new(Node::Collection {
+                    items: vec![Node::BraceExpansion {
+                        prefix: Some(Box::new(Node::Text {
+                            message: Arc::new("W".into()),
+                            start: 1
+                        })),
+                        inside: Some(Box::new(Node::Collection {
+                            items: vec![
+                                Node::Text {
+                                    message: Arc::new("x".into()),
+                                    start: 3
+                                },
+                                Node::Text {
+                                    message: Arc::new("y".into()),
+                                    start: 5
+                                }
+                            ],
+                            start: 2,
+                            end: 6
+                        })),
+                        postfix: None,
+                        start: 1,
+                        end: 6,
+                    }],
+                    start: 0,
+                    end: 7
+                })),
+                postfix: None,
+                start: 0,
+                end: 7
+            })
+        )
+    }
+
+    #[test]
     fn test_feature_empty_collection_item_at_the_end() {
         assert_eq!(
             parse(&vec![
