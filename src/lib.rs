@@ -175,6 +175,16 @@ pub fn expand(node: &crate::parser::Node) -> Result<Vec<String>, ExpansionError>
             start: _,
             end: _,
         } => {
+            // Get the numeric string length to be used later for zero padding
+            let zero_pad = if from.chars().nth(0) == Some('0') || to.chars().nth(0) == Some('0') {
+                if from.len() >= to.len() {
+                    from.len()
+                } else {
+                    to.len()
+                }
+            } else {
+                0
+            };
             let from = if let Ok(from) = from.parse::<usize>() {
                 from
             } else {
@@ -189,7 +199,7 @@ pub fn expand(node: &crate::parser::Node) -> Result<Vec<String>, ExpansionError>
             let range = from..=to;
             let mut inner = vec![];
             for i in range {
-                inner.push(i.to_string());
+                inner.push(format!("{:0>width$}", i, width = zero_pad));
             }
             Ok(inner)
         }
@@ -414,6 +424,41 @@ mod tests {
                 "AGHKL3".to_owned(),
                 "AGHKL4".to_owned(),
                 "AGHKL5".to_owned(),
+            ])
+        )
+    }
+    #[test]
+    fn test_expand_range_no_padding_bracoxidize() {
+        assert_eq!(
+            bracoxidize("A{1..10}"),
+            Ok(vec![
+                "A1".to_owned(),
+                "A2".to_owned(),
+                "A3".to_owned(),
+                "A4".to_owned(),
+                "A5".to_owned(),
+                "A6".to_owned(),
+                "A7".to_owned(),
+                "A8".to_owned(),
+                "A9".to_owned(),
+                "A10".to_owned(),
+            ])
+        )
+    }
+    #[test]
+    fn test_expand_range_zero_padding_bracoxidize() {
+        assert_eq!(
+            bracoxidize("A{4..06}{01..003}"),
+            Ok(vec![
+                "A04001".to_owned(),
+                "A04002".to_owned(),
+                "A04003".to_owned(),
+                "A05001".to_owned(),
+                "A05002".to_owned(),
+                "A05003".to_owned(),
+                "A06001".to_owned(),
+                "A06002".to_owned(),
+                "A06003".to_owned(),
             ])
         )
     }
